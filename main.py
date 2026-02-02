@@ -20,7 +20,7 @@ async def main():
     bot = Bot(token=BOT_TOKEN)
     dp = Dispatcher()
 
-    # Register Routers
+    # Register All Routers
     dp.include_router(admin.router)
     dp.include_router(movies.router)
     dp.include_router(tools.router)
@@ -38,9 +38,10 @@ async def main():
             welcome_text = (
                 f"🚀 **AeroMulti-Bot v1.0**\n"
                 f"Hello {message.from_user.first_name}!\n\n"
+                f"🕵️ **OSINT/Info:** `/me` (reply), `/github`, `/ip`\n"
                 f"📥 **Downloader:** Paste any social link!\n"
                 f"🎬 **Media:** `/movie`, `/mediainfo` (reply)\n"
-                f"🛠️ **Tools:** `/short`, `/qr`, `/github` [user]\n"
+                f"🛠️ **Tools:** `/short`, `/qr`, `/inspect`\n"
                 f"📁 **File Sharing:** Send a file for a link!\n"
                 f"🏆 **Karma:** `/top` leaderboard\n"
                 f"🛡️ **Admin:** `/autoreaction`, `/nightmode`"
