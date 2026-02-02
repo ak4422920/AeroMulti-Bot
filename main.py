@@ -7,7 +7,7 @@ from dotenv import load_dotenv
 
 # Import database & modules
 from database import init_db
-from modules import admin, movies, tools, files
+from modules import admin, movies, tools, files, downloader
 
 load_dotenv()
 logging.basicConfig(level=logging.INFO)
@@ -20,7 +20,6 @@ async def main():
         logging.error("❌ No BOT_TOKEN found!")
         return
 
-    # Initialize bot with default parse mode
     bot = Bot(token=BOT_TOKEN)
     dp = Dispatcher()
 
@@ -29,17 +28,18 @@ async def main():
     dp.include_router(movies.router)
     dp.include_router(tools.router)
     dp.include_router(files.router)
+    dp.include_router(downloader.router)
 
     @dp.message(CommandStart())
     async def cmd_start(message: types.Message, command=None):
-        # If there is no deep link, show the main menu
         if not (command and command.args):
             welcome_text = (
-                f"🚀 **AeroMulti-Bot v1.0**\n\n"
+                f"🚀 **AeroMulti-Bot v1.0**\n"
                 f"Hello {message.from_user.first_name}!\n\n"
+                f"📥 **Downloader:** Just paste any TikTok/YT/Insta link!\n"
                 f"🎬 **Media:** `/movie`, `/trending`\n"
                 f"🛠️ **Tools:** `/short`, `/qr`, `/inspect`\n"
-                f"📁 **File Sharing:** Send me any file to get a link!\n"
+                f"📁 **File Sharing:** Send any file to get a link!\n"
                 f"🛡️ **Admin:** `/autoreaction on/off`"
             )
             await message.answer(welcome_text, parse_mode="Markdown")
