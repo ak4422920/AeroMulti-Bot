@@ -8,3 +8,4 @@ from . import afk
 from . import night_mode
 from . import mediainfo
 from . import osint
+from . import song
