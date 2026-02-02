@@ -4,3 +4,5 @@ python-dotenv
 tmdbv3api
 yt-dlp
 aiohttp
+qrcode
+hachoir
