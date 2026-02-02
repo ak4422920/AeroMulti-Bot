@@ -6,7 +6,7 @@ from aiogram.filters import CommandStart
 from dotenv import load_dotenv
 
 from database import init_db
-from modules import admin, movies, tools, files, downloader, reputation, afk, night_mode, mediainfo
+from modules import admin, movies, tools, files, downloader, reputation, afk, night_mode, mediainfo, osint
 
 load_dotenv()
 logging.basicConfig(level=logging.INFO)
@@ -30,6 +30,7 @@ async def main():
     dp.include_router(afk.router)
     dp.include_router(night_mode.router)
     dp.include_router(mediainfo.router)
+    dp.include_router(osint.router)
 
     @dp.message(CommandStart())
     async def cmd_start(message: types.Message, command=None):
@@ -39,7 +40,7 @@ async def main():
                 f"Hello {message.from_user.first_name}!\n\n"
                 f"📥 **Downloader:** Paste any social link!\n"
                 f"🎬 **Media:** `/movie`, `/mediainfo` (reply)\n"
-                f"🛠️ **Tools:** `/short`, `/qr`, `/inspect`\n"
+                f"🛠️ **Tools:** `/short`, `/qr`, `/github` [user]\n"
                 f"📁 **File Sharing:** Send a file for a link!\n"
                 f"🏆 **Karma:** `/top` leaderboard\n"
                 f"🛡️ **Admin:** `/autoreaction`, `/nightmode`"
