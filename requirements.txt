@@ -1,0 +1,6 @@
+aiogram
+motor
+python-dotenv
+tmdbv3api
+yt-dlp
+aiohttp
