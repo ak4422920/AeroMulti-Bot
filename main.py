@@ -11,8 +11,9 @@ from database import init_db
 # Import all modules
 from modules import (
     admin, movies, tools, files, downloader, 
-    reputation, afk, night_mode, mediainfo, osint, song
+    reputation, afk, night_mode, mediainfo, osint, song, logs
 )
+from modules.middleware import ForceSubMiddleware
 
 load_dotenv()
 logging.basicConfig(level=logging.INFO)
@@ -27,6 +28,9 @@ async def main():
 
     bot = Bot(token=BOT_TOKEN)
     dp = Dispatcher()
+
+    # --- Register Middleware (Force Subscribe) ---
+    dp.message.outer_middleware(ForceSubMiddleware())
 
     # --- Register All Routers ---
     dp.include_router(admin.router)
@@ -43,6 +47,9 @@ async def main():
 
     @dp.message(CommandStart())
     async def cmd_start(message: types.Message, command=None):
+        # Log this activity
+        await logs.send_log(bot, message, "Used /start command")
+
         if not (command and command.args):
             welcome_text = (
                 f"🚀 **AeroMulti-Bot v1.0**\n\n"
