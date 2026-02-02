@@ -5,3 +5,4 @@ from . import files
 from . import downloader
 from . import reputation
 from . import afk
+from . import night_mode
