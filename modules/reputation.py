@@ -1,59 +1,65 @@
 from aiogram import Router, types, F
 from aiogram.filters import Command
-from database import users_col # We use our existing MongoDB collection
+from database import users_col
 
 router = Router()
 
-# Keywords that trigger a Karma increase
-KARMA_KEYWORDS = ["+1", "thanks", "thank you", "good bot", "helpful"]
+# Expanded dictionary of praise and karma triggers
+KARMA_KEYWORDS = [
+    "+1", "thanks", "thank you", "ty", "thx", "good bot", "helpful",
+    "w", "goat", "clutch", "based", "legend", "nice one", "well done",
+    "🌟", "✅", "🔥", "🙌", "⭐", "🔝"
+]
 
 @router.message(F.reply_to_message)
 async def add_karma(message: types.Message):
-    # Check if the message contains a keyword
-    if not any(word in message.text.lower() for word in KARMA_KEYWORDS):
+    # Check if message is just the keyword or contains it
+    text = message.text.lower() if message.text else ""
+    if not any(word in text for word in KARMA_KEYWORDS):
         return
 
-    # Basic Rules
     reply_to = message.reply_to_message
     
-    # 1. Don't give karma to yourself
+    # Validation
     if reply_to.from_user.id == message.from_user.id:
-        return await message.reply("❌ You can't give karma to yourself, nice try!")
+        return await message.reply("❌ You can't give karma to yourself!")
 
-    # 2. Don't give karma to bots
     if reply_to.from_user.is_bot:
         return
 
-    # Update MongoDB: Increment points by 1
-    # upsert=True creates the user if they don't exist yet
+    # Update MongoDB
     await users_col.update_one(
         {"user_id": reply_to.from_user.id},
         {"$inc": {"karma": 1}, "$set": {"username": reply_to.from_user.first_name}},
         upsert=True
     )
 
-    # Get the new total to show the user
     user_data = await users_col.find_one({"user_id": reply_to.from_user.id})
     new_karma = user_data.get("karma", 0)
 
-    await message.answer(
-        f"🌟 **{reply_to.from_user.first_name}** earned a point!\n"
-        f"Total Karma: `{new_karma}`"
-    )
+    # Fun response based on the point total
+    response = f"🌟 **{reply_to.from_user.first_name}** earned a point!"
+    if new_karma % 10 == 0:
+        response += f"\n🔥 Wow! They hit a milestone of `{new_karma}` points!"
+    else:
+        response += f" (Total: `{new_karma}`)"
+
+    await message.answer(response)
 
 @router.message(Command("top"))
 async def get_leaderboard(message: types.Message):
-    # Fetch top 10 users sorted by karma
-    cursor = users_col.find().sort("karma", -1).limit(10)
+    cursor = users_col.find({"karma": {"$exists": True}}).sort("karma", -1).limit(10)
     top_users = await cursor.to_list(length=10)
 
     if not top_users:
         return await message.reply("🏆 No karma points awarded yet!")
 
-    leaderboard = "🏆 **Karma Leaderboard** 🏆\n\n"
+    leaderboard = "🏆 **AeroMulti Karma Leaders** 🏆\n\n"
     for i, user in enumerate(top_users, 1):
         name = user.get("username", "Unknown")
         pts = user.get("karma", 0)
-        leaderboard += f"{i}. {name} — `{pts} pts`\n"
+        # Add medals for top 3
+        medal = "🥇" if i == 1 else "🥈" if i == 2 else "🥉" if i == 3 else f"{i}."
+        leaderboard += f"{medal} {name} — `{pts} pts`\n"
 
     await message.reply(leaderboard, parse_mode="Markdown")
