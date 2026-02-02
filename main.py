@@ -7,7 +7,7 @@ from dotenv import load_dotenv
 
 # Import database & modules
 from database import init_db
-from modules import admin, movies, tools, files, downloader
+from modules import admin, movies, tools, files, downloader, reputation
 
 load_dotenv()
 logging.basicConfig(level=logging.INFO)
@@ -29,6 +29,7 @@ async def main():
     dp.include_router(tools.router)
     dp.include_router(files.router)
     dp.include_router(downloader.router)
+    dp.include_router(reputation.router)
 
     @dp.message(CommandStart())
     async def cmd_start(message: types.Message, command=None):
@@ -36,10 +37,11 @@ async def main():
             welcome_text = (
                 f"🚀 **AeroMulti-Bot v1.0**\n"
                 f"Hello {message.from_user.first_name}!\n\n"
-                f"📥 **Downloader:** Just paste any TikTok/YT/Insta link!\n"
+                f"📥 **Downloader:** Paste any link (TikTok/YT/Insta)!\n"
                 f"🎬 **Media:** `/movie`, `/trending`\n"
                 f"🛠️ **Tools:** `/short`, `/qr`, `/inspect`\n"
-                f"📁 **File Sharing:** Send any file to get a link!\n"
+                f"📁 **File Sharing:** Send a file to get a link!\n"
+                f"🏆 **Karma:** `/top` leaderboard\n"
                 f"🛡️ **Admin:** `/autoreaction on/off`"
             )
             await message.answer(welcome_text, parse_mode="Markdown")
