@@ -4,6 +4,7 @@ import logging
 from aiogram import Bot, Dispatcher, types
 from aiogram.filters import CommandStart
 from dotenv import load_dotenv
+from aiohttp import web
 
 # Import database
 from database import init_db
@@ -18,6 +19,21 @@ from modules.middleware import ForceSubMiddleware
 load_dotenv()
 logging.basicConfig(level=logging.INFO)
 
+# --- DUMMY WEB SERVER FOR KOYEB HEALTH CHECKS ---
+async def handle(request):
+    return web.Response(text="Bot is Running!")
+
+async def start_webhook():
+    app = web.Application()
+    app.router.add_get('/', handle)
+    runner = web.AppRunner(app)
+    await runner.setup()
+    # Koyeb defaults to port 8000
+    site = web.TCPSite(runner, '0.0.0.0', 8000)
+    await site.start()
+    logging.info("🌐 Health check server started on port 8000")
+
+# --- MAIN BOT LOGIC ---
 async def main():
     await init_db()
     
@@ -29,10 +45,10 @@ async def main():
     bot = Bot(token=BOT_TOKEN)
     dp = Dispatcher()
 
-    # --- Register Middleware (Force Subscribe) ---
+    # Register Middleware
     dp.message.outer_middleware(ForceSubMiddleware())
 
-    # --- Register All Routers ---
+    # Register All Routers
     dp.include_router(admin.router)
     dp.include_router(movies.router)
     dp.include_router(tools.router)
@@ -47,24 +63,26 @@ async def main():
 
     @dp.message(CommandStart())
     async def cmd_start(message: types.Message, command=None):
-        # Log this activity
-        await logs.send_log(bot, message, "Used /start command")
+        # Log this new user
+        await logs.send_log(bot, message, "Started the Bot")
 
         if not (command and command.args):
             welcome_text = (
                 f"🚀 **AeroMulti-Bot v1.0**\n\n"
-                f"Hello {message.from_user.first_name}! Your all-in-one assistant is ready.\n\n"
+                f"Hello {message.from_user.first_name}! Your bot is now stable.\n\n"
                 f"🎵 **Music:** `/song [name]`\n"
                 f"📥 **Downloader:** Paste any social link\n"
                 f"🎬 **Media:** `/movie`, `/trending`, `/mediainfo`\n"
                 f"🕵️ **OSINT:** `/me`, `/github`, `/ip`\n"
                 f"🛠️ **Tools:** `/short`, `/qr`, `/inspect`\n"
                 f"📁 **Files:** Send a file for a link\n"
-                f"🏆 **Social:** `/top` karma, `/afk` status\n"
                 f"🛡️ **Admin:** `/autoreaction`, `/nightmode`"
             )
             await message.answer(welcome_text, parse_mode="Markdown")
 
+    # Start the dummy server and the bot together
+    asyncio.create_task(start_webhook())
+    
     logging.info("🤖 AeroMulti-Bot is fully loaded and running!")
     await dp.start_polling(bot)
 
