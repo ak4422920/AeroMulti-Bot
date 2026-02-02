@@ -6,3 +6,4 @@ from . import downloader
 from . import reputation
 from . import afk
 from . import night_mode
+from . import mediainfo
