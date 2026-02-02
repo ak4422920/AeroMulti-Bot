@@ -5,22 +5,30 @@ from aiogram import Bot, Dispatcher, types
 from aiogram.filters import CommandStart
 from dotenv import load_dotenv
 
+# Import database
 from database import init_db
-from modules import admin, movies, tools, files, downloader, reputation, afk, night_mode, mediainfo, osint
+
+# Import all modules
+from modules import (
+    admin, movies, tools, files, downloader, 
+    reputation, afk, night_mode, mediainfo, osint, song
+)
 
 load_dotenv()
 logging.basicConfig(level=logging.INFO)
 
 async def main():
     await init_db()
+    
     BOT_TOKEN = os.getenv("BOT_TOKEN")
     if not BOT_TOKEN:
+        logging.error("❌ NO BOT_TOKEN FOUND!")
         return
 
     bot = Bot(token=BOT_TOKEN)
     dp = Dispatcher()
 
-    # Register All Routers
+    # --- Register All Routers ---
     dp.include_router(admin.router)
     dp.include_router(movies.router)
     dp.include_router(tools.router)
@@ -31,28 +39,30 @@ async def main():
     dp.include_router(night_mode.router)
     dp.include_router(mediainfo.router)
     dp.include_router(osint.router)
+    dp.include_router(song.router)
 
     @dp.message(CommandStart())
     async def cmd_start(message: types.Message, command=None):
         if not (command and command.args):
             welcome_text = (
-                f"🚀 **AeroMulti-Bot v1.0**\n"
-                f"Hello {message.from_user.first_name}!\n\n"
-                f"🕵️ **OSINT/Info:** `/me` (reply), `/github`, `/ip`\n"
-                f"📥 **Downloader:** Paste any social link!\n"
-                f"🎬 **Media:** `/movie`, `/mediainfo` (reply)\n"
+                f"🚀 **AeroMulti-Bot v1.0**\n\n"
+                f"Hello {message.from_user.first_name}! Your all-in-one assistant is ready.\n\n"
+                f"🎵 **Music:** `/song [name]`\n"
+                f"📥 **Downloader:** Paste any social link\n"
+                f"🎬 **Media:** `/movie`, `/trending`, `/mediainfo`\n"
+                f"🕵️ **OSINT:** `/me`, `/github`, `/ip`\n"
                 f"🛠️ **Tools:** `/short`, `/qr`, `/inspect`\n"
-                f"📁 **File Sharing:** Send a file for a link!\n"
-                f"🏆 **Karma:** `/top` leaderboard\n"
+                f"📁 **Files:** Send a file for a link\n"
+                f"🏆 **Social:** `/top` karma, `/afk` status\n"
                 f"🛡️ **Admin:** `/autoreaction`, `/nightmode`"
             )
             await message.answer(welcome_text, parse_mode="Markdown")
 
-    logging.info("🤖 AeroMulti-Bot has started!")
+    logging.info("🤖 AeroMulti-Bot is fully loaded and running!")
     await dp.start_polling(bot)
 
 if __name__ == "__main__":
     try:
         asyncio.run(main())
     except (KeyboardInterrupt, SystemExit):
-        pass
+        logging.info("Bot offline.")
