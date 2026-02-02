@@ -8,13 +8,13 @@ from dotenv import load_dotenv
 # Import our database connection
 from database import init_db
 
-# Import our modules (We will add more here in Step 3, 4, etc.)
-from modules import admin
+# Import our modules
+from modules import admin, movies # Added movies here
 
 # Load variables from .env file
 load_dotenv()
 
-# Enable logging to see errors in the console/hosting logs
+# Enable logging
 logging.basicConfig(level=logging.INFO)
 
 async def main():
@@ -22,39 +22,39 @@ async def main():
     await init_db()
 
     # 2. Setup Bot and Dispatcher
-    # We get the token from Environment Variables for security
     BOT_TOKEN = os.getenv("BOT_TOKEN")
     if not BOT_TOKEN:
-        print("❌ ERROR: No BOT_TOKEN found in environment variables!")
+        logging.error("❌ No BOT_TOKEN found!")
         return
 
     bot = Bot(token=BOT_TOKEN)
     dp = Dispatcher()
 
     # 3. Register Routers (Modules)
-    # This connects the code in modules/admin.py to the bot
     dp.include_router(admin.router)
+    dp.include_router(movies.router) # Added this line
 
     # 4. Basic Start Command
     @dp.message(CommandStart())
     async def cmd_start(message: types.Message):
-        # Professional welcome message
         welcome_text = (
-            f"🚀 **AeroMulti-Bot v1.0 is Online!**\n\n"
-            f"Hello {message.from_user.first_name}! I am your modular "
-            f"multitasking assistant powered by MongoDB.\n\n"
-            f"💡 **Available Modules:**\n"
-            f"• Group Admin (Auto-Reactions)\n"
-            f"• More coming soon..."
+            f"🚀 **AeroMulti-Bot v1.0**\n\n"
+            f"Hello {message.from_user.first_name}!\n"
+            f"I am your modular assistant. Use the commands below:\n\n"
+            f"🎬 **Movies:**\n"
+            f"• `/movie [name]` - Search movie info\n"
+            f"• `/trending` - Top movies today\n\n"
+            f"🛡️ **Admin:**\n"
+            f"• `/autoreaction on/off` - Toggle reactions\n"
         )
         await message.answer(welcome_text, parse_mode="Markdown")
 
     # 5. Start Polling
-    print("🤖 AeroMulti-Bot has started successfully!")
+    logging.info("🤖 AeroMulti-Bot has started!")
     await dp.start_polling(bot)
 
 if __name__ == "__main__":
     try:
         asyncio.run(main())
     except (KeyboardInterrupt, SystemExit):
-        print("Bot stopped.")
+        logging.info("Bot stopped.")
