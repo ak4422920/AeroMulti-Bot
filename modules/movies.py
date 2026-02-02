@@ -1,7 +1,7 @@
 import os
-from aiogram import Router, types, F
+from aiogram import Router, types
 from aiogram.filters import Command
-from tmdbv3api import TMDb, Movie, TV
+from tmdbv3api import TMDb, Movie, Trending
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -12,14 +12,12 @@ router = Router()
 tmdb = TMDb()
 tmdb.api_key = os.getenv("TMDB_API_KEY")
 tmdb.language = 'en'
-tmdb.debug = True
 
 movie_tool = Movie()
-tv_tool = TV()
+trending_tool = Trending()
 
 @router.message(Command("movie"))
 async def search_movie(message: types.Message):
-    # Extract query from command
     query = message.text.replace("/movie", "").strip()
     
     if not query:
@@ -29,24 +27,28 @@ async def search_movie(message: types.Message):
     
     try:
         search = movie_tool.search(query)
-        if not search:
+        if not search or len(search) == 0:
             return await msg.edit_text("❌ No movies found.")
 
-        # Get the first (most relevant) result
+        # Get the first result
         res = search[0]
         
-        # Build info
-        title = res.title
-        release = res.release_date[:4] if res.release_date else "N/A"
-        rating = res.vote_average
-        overview = res.overview[:300] + "..." if len(res.overview) > 300 else res.overview
-        poster = f"https://image.tmdb.org/t/p/w500{res.poster_path}" if res.poster_path else None
+        # Safely get attributes
+        title = getattr(res, 'title', 'Unknown Title')
+        release = getattr(res, 'release_date', '0000')[:4]
+        rating = getattr(res, 'vote_average', 0)
+        overview = getattr(res, 'overview', 'No description available.')
+        if len(overview) > 300:
+            overview = overview[:300] + "..."
+            
+        poster_path = getattr(res, 'poster_path', None)
+        poster = f"https://image.tmdb.org/t/p/w500{poster_path}" if poster_path else None
 
         caption = (
             f"🎬 **{title}** ({release})\n"
             f"⭐ **Rating:** {rating}/10\n\n"
             f"📝 **Plot:** {overview}\n\n"
-            f"🔗 [View on TMDb](https://www.themoviedb.org/movie/{res.id})"
+            f"🔗 [View on TMDb](https://www.themoviedb.org/movie/{getattr(res, 'id', '')})"
         )
 
         if poster:
@@ -60,13 +62,25 @@ async def search_movie(message: types.Message):
 
 @router.message(Command("trending"))
 async def trending_movies(message: types.Message):
+    msg = await message.reply("🔥 Fetching today's trending movies...")
     try:
-        popular = movie_tool.popular()
-        text = "🔥 **Trending Movies Today:**\n\n"
-        for i, m in enumerate(popular[:10], 1):
-            text += f"{i}. {m.title} ({m.vote_average} ⭐)\n"
+        # Fetch trending movies for the week
+        trending = trending_tool.movie_week()
         
-        await message.reply(text, parse_mode="Markdown")
+        text = "🔥 **Trending Movies This Week:**\n\n"
+        
+        # Use a simple loop to avoid slice errors
+        count = 0
+        for m in trending:
+            if count >= 10: # Limit to top 10 manually
+                break
+            
+            title = getattr(m, 'title', 'Unknown')
+            rating = getattr(m, 'vote_average', 0)
+            text += f"{count + 1}. {title} — ⭐ `{rating}`\n"
+            count += 1
+        
+        await msg.edit_text(text, parse_mode="Markdown")
+        
     except Exception as e:
-        await message.reply(f"❌ Error fetching trending: {str(e)}")
-      
+        await msg.edit_text(f"❌ Error fetching trending: {str(e)}")
