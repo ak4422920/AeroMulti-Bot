@@ -1,12 +1,4 @@
-from . import admin
+# This file allows main.py to import modules easily
 from . import movies
-from . import tools
-from . import files
-from . import downloader
-from . import reputation
-from . import afk
-from . import night_mode
-from . import mediainfo
-from . import osint
-from . import song
-from . import youtube
+
+# You can add more modules here as we build them (e.g., from . import downloader)
