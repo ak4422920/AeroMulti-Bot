@@ -4,20 +4,27 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-# Connect to MongoDB using the URI from your environment variables
-# Make sure MONGO_URI is added in your Koyeb settings!
+# MongoDB Connection
 client = AsyncIOMotorClient(os.getenv("MONGO_URI"))
-db = client['AeroMulti_DB']
+db = client['AeroMulti_V2']
 
-# --- Collections (Think of these as tables/folders) ---
-users_col = db['users']           # For Karma and AFK
-groups_col = db['groups']         # For Admin and Night Mode
-files_col = db['shared_files']    # For the File Sharing System (Fixes your error!)
+# Collections
+users_col = db['users']
+post_col = db['posted_movies'] # Track autoposts
 
-async def init_db():
+async def test_db_connection():
     try:
-        # Check if the connection is alive
         await client.admin.command('ping')
-        print("✅ MongoDB Connection Successful!")
+        return True
     except Exception as e:
-        print(f"❌ MongoDB Connection Failed: {e}")
+        print(f"DB Connection Error: {e}")
+        return False
+
+async def is_movie_posted(movie_id):
+    """Check if a movie has already been sent to the channel"""
+    found = await post_col.find_one({"movie_id": movie_id})
+    return bool(found)
+
+async def save_posted_movie(movie_id):
+    """Save movie ID to avoid duplicates"""
+    await post_col.insert_one({"movie_id": movie_id})
