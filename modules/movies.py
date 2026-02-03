@@ -5,7 +5,6 @@ from tmdbv3api import TMDb, Movie, Trending
 from dotenv import load_dotenv
 
 load_dotenv()
-
 router = Router()
 
 # Initialize TMDb
@@ -21,66 +20,60 @@ async def search_movie(message: types.Message):
     query = message.text.replace("/movie", "").strip()
     
     if not query:
-        return await message.reply("❓ Please provide a movie name.\nExample: `/movie Interstellar`", parse_mode="Markdown")
+        return await message.reply("🍿 **Usage:** `/movie [title]`")
 
-    msg = await message.reply("🔍 Searching TMDb...")
+    msg = await message.reply("🛰️ **Scanning TMDb database...**")
     
     try:
         search = movie_tool.search(query)
-        if not search or len(search) == 0:
-            return await msg.edit_text("❌ No movies found.")
+        if not search:
+            return await msg.edit_text("❌ No results found for your search.")
 
-        # Get the first result
         res = search[0]
-        
-        # Safely get attributes
-        title = getattr(res, 'title', 'Unknown Title')
-        release = getattr(res, 'release_date', '0000')[:4]
+        title = getattr(res, 'title', 'N/A')
+        release = getattr(res, 'release_date', 'N/A')[:4]
         rating = getattr(res, 'vote_average', 0)
-        overview = getattr(res, 'overview', 'No description available.')
-        if len(overview) > 300:
-            overview = overview[:300] + "..."
-            
+        overview = getattr(res, 'overview', 'No plot available.')
+        
+        # UI Formatting
+        if len(overview) > 400:
+            overview = overview[:400] + "..."
+
         poster_path = getattr(res, 'poster_path', None)
-        poster = f"https://image.tmdb.org/t/p/w500{poster_path}" if poster_path else None
+        poster_url = f"https://image.tmdb.org/t/p/w500{poster_path}" if poster_path else None
 
         caption = (
-            f"🎬 **{title}** ({release})\n"
-            f"⭐ **Rating:** {rating}/10\n\n"
-            f"📝 **Plot:** {overview}\n\n"
-            f"🔗 [View on TMDb](https://www.themoviedb.org/movie/{getattr(res, 'id', '')})"
+            f"🎬 **{title.upper()}**\n\n"
+            f"📅 **Year:** `{release}`\n"
+            f"🌟 **Rating:** `⭐ {rating}/10`\n\n"
+            f"📖 **Storyline:**\n_{overview}_\n\n"
+            f"Powered by @{message.bot.user.username if message.bot.user else 'AeroMulti'}"
         )
 
-        if poster:
-            await message.reply_photo(photo=poster, caption=caption, parse_mode="Markdown")
+        if poster_url:
+            await message.reply_photo(photo=poster_url, caption=caption, parse_mode="Markdown")
             await msg.delete()
         else:
-            await msg.edit_text(caption, parse_mode="Markdown", disable_web_page_preview=False)
+            await msg.edit_text(caption, parse_mode="Markdown")
 
     except Exception as e:
-        await msg.edit_text(f"❌ Error: {str(e)}")
+        await msg.edit_text(f"❌ **TMDb Error:** `{str(e)}`")
 
 @router.message(Command("trending"))
 async def trending_movies(message: types.Message):
-    msg = await message.reply("🔥 Fetching today's trending movies...")
+    msg = await message.reply("🔥 **Fetching trending media...**")
     try:
-        # Fetch trending movies for the week
         trending = trending_tool.movie_week()
+        text = "🏆 **TRENDING THIS WEEK** 🏆\n\n"
         
-        text = "🔥 **Trending Movies This Week:**\n\n"
-        
-        # Use a simple loop to avoid slice errors
         count = 0
         for m in trending:
-            if count >= 10: # Limit to top 10 manually
-                break
-            
+            if count >= 10: break
             title = getattr(m, 'title', 'Unknown')
             rating = getattr(m, 'vote_average', 0)
-            text += f"{count + 1}. {title} — ⭐ `{rating}`\n"
+            text += f"**{count + 1}.** {title} — `⭐ {rating}`\n"
             count += 1
         
         await msg.edit_text(text, parse_mode="Markdown")
-        
     except Exception as e:
-        await msg.edit_text(f"❌ Error fetching trending: {str(e)}")
+        await msg.edit_text(f"❌ Error: {str(e)}")
